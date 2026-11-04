@@ -105,7 +105,7 @@ where
 {
     keys_builder: PrimitiveBuilder<K>,
     values_builder: PrimitiveBuilder<V>,
-    map: HashMap<Value<V::Native>, usize, ahash::RandomState>,
+    map: HashMap<Value<V::Native>, usize, foldhash::fast::RandomState>,
 }
 
 impl<K, V> Default for PrimitiveDictionaryBuilder<K, V>
