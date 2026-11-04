@@ -36,7 +36,24 @@ struct Value<T>(T);
 
 impl<T: ToByteSlice> std::hash::Hash for Value<T> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write(self.0.to_byte_slice())
+        // Hash fixed-width values through the integer `write_*` methods, which
+        // hashers specialize, rather than the variable-length `write` path.
+        // The byte length is constant for a given `T`, so only one branch
+        // survives monomorphization.
+        let bytes = self.0.to_byte_slice();
+        if let Ok(b) = <[u8; 4]>::try_from(bytes) {
+            state.write_u32(u32::from_ne_bytes(b))
+        } else if let Ok(b) = <[u8; 8]>::try_from(bytes) {
+            state.write_u64(u64::from_ne_bytes(b))
+        } else if let Ok(b) = <[u8; 16]>::try_from(bytes) {
+            state.write_u128(u128::from_ne_bytes(b))
+        } else if let Ok(b) = <[u8; 2]>::try_from(bytes) {
+            state.write_u16(u16::from_ne_bytes(b))
+        } else if let Ok(b) = <[u8; 1]>::try_from(bytes) {
+            state.write_u8(b[0])
+        } else {
+            state.write(bytes)
+        }
     }
 }
 
